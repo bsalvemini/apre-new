@@ -42,10 +42,11 @@ import { environment } from '../../../../environments/environment';
 
         <div class="form__actions">
           <input type="submit" class="button button--primary" value="Submit">
+          <!-- Add cancel button next to submit button. This button replaces the original return link. -->
+          <a class="link button button--warning" routerLink="/user-management/users">Cancel</a>
         </div>
       </form>
       <br />
-      <a class="link link--secondary" routerLink="/user-management/users">Return</a>
     </div>
   `,
   styles: ``
