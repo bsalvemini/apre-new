@@ -92,4 +92,72 @@ router.get('/channel-rating-by-month', (req, res, next) => {
   }
 });
 
+/**
+ * @description
+ *
+ * GET /by-channel
+ *
+ * Fetches customer feedback data by channel
+ *
+ * Example:
+ * fetch('/by-channel?channel=Retail')
+ *  .then(response => response.json())
+ *  .then(data => console.log(data));
+ */
+router.get('/by-channel', async(req, res, next) => {
+try {
+  const { channel } = req.query; /// Get channel from query string
+
+  if (!channel) { // If channel is not specified
+    return next(createError(400, 'channel is required')) // throw a 400 error with "channel is required" message
+  }
+
+  mongo (async db => {
+    const data = await db.collection('customerFeedback').aggregate([
+      {
+        '$match': { // match on the given channel
+          'channel': channel
+        }
+      }, {
+        '$lookup': { // lookup the agent details from the agents collection using the agentID field
+          'from': 'agents',
+          'localField': 'agentId',
+          'foreignField': 'agentId',
+          'as': 'agentDetails'
+        }
+      }, {
+        '$addFields': {
+          'agentDetails': {
+            '$arrayElemAt': [
+              '$agentDetails', 0 // get the first entry from the agentDetails array
+            ]
+          }
+        }
+      }, {
+        '$project': { // Include only these fields in the result, expect _id
+          '_id': 0,
+          'date': 1,
+          'region': 1,
+          'product': 1,
+          'category': 1,
+          'channel': 1,
+          'salesperson': 1,
+          'customer': 1,
+          'rating': 1,
+          'feedbackType': 1,
+          'feedbackText': 1,
+          'agentId': 1,
+          'agentDetails': 1
+        }
+      }
+    ]).toArray();
+
+    res.send(data);
+  }, next)
+} catch (err) {
+  console.error('Error in /by-channel', err);
+    next(err);
+}
+});
+
 module.exports = router;

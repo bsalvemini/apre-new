@@ -75,4 +75,61 @@ describe('Apre Customer Feedback API', () => {
       type: 'error'
     });
   });
+
+  // Test the by by-channel endpoint
+  it('should return 400 if the channel parameter is missing', async () => {
+    const response = await request(app).get('/api/reports/customer-feedback/by-channel'); // Send a GET request to the /by-channel endpoint with missing channel
+    expect(response.status).toBe(400); // Expect a 400 status code
+
+    // Expect the response body to match the expected data
+    expect(response.body).toEqual({
+      message: 'channel is required',
+      status: 400,
+      type: 'error'
+    });
+  });
+
+  it('should return 200 and an empty array if no customer feedback data is found for the channel', async () => {
+    // Mock the MongoDB implementation
+    mongo.mockImplementation(async (callback) => {
+      const db = {
+        collection: jest.fn().mockReturnThis(),
+        aggregate: jest.fn().mockReturnValue({
+          toArray: jest.fn().mockResolvedValue([])
+        })
+      };
+      await callback(db);
+    });
+
+    // Make a request to the endpoint
+    const response = await request(app).get('/api/reports/customer-feedback/by-channel?channel=Phone');
+
+    // Assert the response
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual([]);
+  });
+
+  it('should fetch customer feedback data for a given channel', async () => {
+     // Mock the MongoDB implementation
+     mongo.mockImplementation(async (callback) => {
+      const db = {
+        collection: jest.fn().mockReturnThis(),
+        aggregate: jest.fn().mockReturnValue({
+          toArray: jest.fn().mockResolvedValue([
+            {
+              channel: 'Retail'
+            }
+          ])
+        })
+      };
+      await callback(db);
+    });
+
+    const response = await request(app).get('/api/reports/customer-feedback/by-channel?channel=Retail');
+
+    console.log(response.body);
+
+    expect(response.status).toBe(200); // Expect a 200 status code
+    expect(response.body).toEqual([ { channel: 'Retail' } ])
+  });
 });
